@@ -9,6 +9,11 @@ import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.Scanner;
 
+/**
+ * HotelApp — UI Layer (Main class).
+ * Only handles: reading input, calling services, printing results.
+ * No business logic here — that is Separation of Concerns.
+ */
 public class HotelApp {
 
     private static Scanner scanner = new Scanner(System.in);
@@ -34,11 +39,11 @@ public class HotelApp {
                 case 4 -> makeBooking();
                 case 5 -> cancelBooking();
                 case 6 -> checkOut();
-                case 7 -> System.out.println("Coming soon: View Booking Details");
-                case 8 -> System.out.println("Coming soon: Guest Booking History");
-                case 9 -> System.out.println("Coming soon: Admin Panel");
+                case 7 -> viewBookingDetails();
+                case 8 -> viewGuestBookings();
+                case 9 -> adminPanel();
                 case 0 -> {
-                    System.out.println("Goodbye!");
+                    System.out.println("\nThank you for using Hotel Booking System. Goodbye!");
                     running = false;
                 }
                 default -> System.out.println("Invalid choice. Try again.");
@@ -47,6 +52,8 @@ public class HotelApp {
         scanner.close();
     }
 
+    // Polymorphism: room.toString() calls getRoomDetails()
+    // on the actual subclass (Single/Double/Suite) at runtime
     private static void showAllRooms() {
         System.out.println("\n===== ALL ROOMS =====");
         List<Room> rooms = roomService.getAllRooms();
@@ -78,9 +85,6 @@ public class HotelApp {
         guestService.registerGuest(name, phone, email);
     }
 
-    // Full booking flow:
-    // 1. Find guest by ID  2. Show available rooms  3. Read room + dates
-    // 4. Call bookingService.bookRoom() which throws custom exceptions if invalid
     private static void makeBooking() {
         System.out.println("\n===== BOOK A ROOM =====");
 
@@ -106,14 +110,12 @@ public class HotelApp {
             System.out.println("\nBooking Confirmed!");
             System.out.println(booking);
         } catch (RoomNotAvailableException e) {
-            // Custom exception caught here — service threw it, UI displays it
             System.out.println("ERROR: " + e.getMessage());
         } catch (InvalidDateException e) {
             System.out.println("ERROR: " + e.getMessage());
         }
     }
 
-    // Asks for booking ID, calls service, catches BookingNotFoundException
     private static void cancelBooking() {
         System.out.println("\n===== CANCEL BOOKING =====");
         System.out.print("Enter Booking ID to cancel: ");
@@ -126,7 +128,6 @@ public class HotelApp {
         }
     }
 
-    // Checks out guest, service prints the bill internally
     private static void checkOut() {
         System.out.println("\n===== CHECK-OUT =====");
         System.out.print("Enter Booking ID to check out: ");
@@ -136,6 +137,54 @@ public class HotelApp {
             bookingService.checkOut(bookingId);
         } catch (BookingNotFoundException e) {
             System.out.println("ERROR: " + e.getMessage());
+        }
+    }
+
+    // Fetches and prints a single booking by ID
+    private static void viewBookingDetails() {
+        System.out.println("\n===== BOOKING DETAILS =====");
+        System.out.print("Enter Booking ID: ");
+        String bookingId = scanner.nextLine().trim();
+
+        try {
+            Booking booking = bookingService.getBooking(bookingId);
+            System.out.println(booking);
+        } catch (BookingNotFoundException e) {
+            System.out.println("ERROR: " + e.getMessage());
+        }
+    }
+
+    // Uses guestBookingsMap inside BookingService (HashMap lookup by guest ID)
+    private static void viewGuestBookings() {
+        System.out.println("\n===== GUEST BOOKING HISTORY =====");
+        System.out.print("Enter Guest ID: ");
+        String guestId = scanner.nextLine().trim();
+
+        List<Booking> bookings = bookingService.getBookingsForGuest(guestId);
+        if (bookings.isEmpty()) {
+            System.out.println("No bookings found for Guest ID: " + guestId);
+        } else {
+            for (Booking b : bookings) {
+                System.out.println("--------------------");
+                System.out.println(b);
+            }
+        }
+    }
+
+    // Admin view: occupancy summary + full booking list
+    private static void adminPanel() {
+        System.out.println("\n===== ADMIN PANEL =====");
+        roomService.printOccupancySummary();
+
+        System.out.println("\n--- All Bookings ---");
+        List<Booking> all = bookingService.getAllBookings();
+        if (all.isEmpty()) {
+            System.out.println("No bookings in system.");
+        } else {
+            for (Booking b : all) {
+                System.out.println("--------------------");
+                System.out.println(b);
+            }
         }
     }
 
@@ -172,7 +221,6 @@ public class HotelApp {
         }
     }
 
-    // Reads and parses a date — returns null if format is wrong
     private static LocalDate readDate(String prompt) {
         System.out.print(prompt);
         try {
