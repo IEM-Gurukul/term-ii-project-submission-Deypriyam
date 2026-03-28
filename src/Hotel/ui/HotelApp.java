@@ -1,13 +1,10 @@
 package hotel.ui;
 
+import hotel.model.*;
 import hotel.service.*;
+import java.util.List;
 import java.util.Scanner;
 
-/**
- * HotelApp — UI Layer (Main class).
- * Only handles: reading input, calling services, printing results.
- * No business logic here.
- */
 public class HotelApp {
 
     private static Scanner scanner = new Scanner(System.in);
@@ -24,9 +21,9 @@ public class HotelApp {
             int choice = readInt("Enter choice: ");
 
             switch (choice) {
-                case 1 -> System.out.println("Coming soon: View All Rooms");
-                case 2 -> System.out.println("Coming soon: View Available Rooms");
-                case 3 -> System.out.println("Coming soon: Register Guest");
+                case 1 -> showAllRooms();
+                case 2 -> showAvailableRooms();
+                case 3 -> registerGuest();
                 case 4 -> System.out.println("Coming soon: Book a Room");
                 case 5 -> System.out.println("Coming soon: Cancel Booking");
                 case 6 -> System.out.println("Coming soon: Check-Out");
@@ -41,6 +38,42 @@ public class HotelApp {
             }
         }
         scanner.close();
+    }
+
+    // Shows all rooms — polymorphism happens here:
+    // room.toString() calls getRoomDetails() on whichever subclass it actually is
+    private static void showAllRooms() {
+        System.out.println("\n===== ALL ROOMS =====");
+        List<Room> rooms = roomService.getAllRooms();
+        for (Room room : rooms) {
+            System.out.println(room); // calls toString() -> getRoomDetails() polymorphically
+        }
+    }
+
+    // Shows only rooms where isAvailable() == true
+    private static void showAvailableRooms() {
+        System.out.println("\n===== AVAILABLE ROOMS =====");
+        List<Room> available = roomService.getAvailableRooms();
+        if (available.isEmpty()) {
+            System.out.println("No rooms available at this time.");
+        } else {
+            for (Room room : available) {
+                System.out.println(room);
+            }
+        }
+    }
+
+    // Reads guest details from console, delegates to GuestService
+    private static void registerGuest() {
+        System.out.println("\n===== REGISTER GUEST =====");
+        System.out.print("Enter Name  : ");
+        String name = scanner.nextLine().trim();
+        System.out.print("Enter Phone : ");
+        String phone = scanner.nextLine().trim();
+        System.out.print("Enter Email : ");
+        String email = scanner.nextLine().trim();
+
+        guestService.registerGuest(name, phone, email);
     }
 
     private static void printBanner() {
